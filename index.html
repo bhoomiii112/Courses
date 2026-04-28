@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CourseAPI — Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;1,400&family=Syne:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <span class="brand-icon">◈</span>
+      <div>
+        <div class="brand-name">CourseAPI</div>
+        <div class="brand-tag">FastAPI Dashboard</div>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <button class="nav-btn active" data-view="courses" onclick="switchView('courses', this)">
+        <span class="nav-icon">⊞</span> All Courses
+      </button>
+      <button class="nav-btn" data-view="filter" onclick="switchView('filter', this)">
+        <span class="nav-icon">⊟</span> Query &amp; Filter
+      </button>
+      <button class="nav-btn" data-view="paginate" onclick="switchView('paginate', this)">
+        <span class="nav-icon">⊡</span> Paginate
+      </button>
+    </nav>
+
+    <div class="sidebar-meta">
+      <div class="meta-item">
+        <span class="meta-label">Base URL</span>
+        <span class="meta-val mono" id="baseUrlDisplay">localhost:8000</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">Total Courses</span>
+        <span class="meta-val mono" id="totalCount">—</span>
+      </div>
+      <div class="meta-item">
+        <span class="meta-label">API Status</span>
+        <span class="meta-val" id="apiStatus"><span class="dot dot-idle"></span> Idle</span>
+      </div>
+    </div>
+
+    <div class="base-url-wrap">
+      <label class="form-label">API Base URL</label>
+      <input class="form-input mono" id="baseUrl" value="http://localhost:8000" placeholder="http://localhost:8000" />
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <div class="main">
+
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <h1 class="topbar-title" id="viewTitle">All Courses</h1>
+        <span class="topbar-sub" id="viewSub">GET /courses</span>
+      </div>
+      <div class="topbar-right">
+        <button class="btn btn-outline" onclick="refreshCourses()">↺ Refresh</button>
+        <button class="btn btn-primary" onclick="openModal()">+ New Course</button>
+      </div>
+    </header>
+
+    <!-- ── VIEW: All Courses ── -->
+    <section class="view active" id="view-courses">
+      <div class="courses-grid" id="coursesGrid">
+        <div class="skeleton-grid">
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+          <div class="skeleton-card"></div>
+        </div>
+      </div>
+      <div class="empty-state hidden" id="emptyState">
+        <div class="empty-icon">◎</div>
+        <p>No courses found.<br>Add one using the button above.</p>
+      </div>
+    </section>
+
+    <!-- ── VIEW: Query & Filter ── -->
+    <section class="view hidden" id="view-filter">
+      <div class="query-panel">
+        <div class="panel-head">
+          <span class="mono panel-route">GET /query_courses</span>
+          <button class="btn btn-primary btn-sm" onclick="runFilter()">Run Query</button>
+        </div>
+        <div class="filter-grid">
+          <div class="form-group">
+            <label class="form-label">Title</label>
+            <input class="form-input" id="q-title" placeholder="Exact title…"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Instructor</label>
+            <input class="form-input" id="q-instructor" placeholder="Exact instructor…"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category</label>
+            <input class="form-input" id="q-category" placeholder="e.g. programming"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Duration (hrs)</label>
+            <input class="form-input" id="q-duration" type="number" min="1" placeholder="Exact hours"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Min Price (₹)</label>
+            <input class="form-input" id="q-minprice" type="number" min="0" placeholder="0"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Max Price (₹)</label>
+            <input class="form-input" id="q-maxprice" type="number" min="0" placeholder="10000"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Published</label>
+            <select class="form-input" id="q-published">
+              <option value="">— Any —</option>
+              <option value="true">Published</option>
+              <option value="false">Unpublished</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Discount %</label>
+            <input class="form-input" id="q-discount" type="number" min="0" max="100" placeholder="0–100"/>
+          </div>
+        </div>
+        <div class="query-url-preview">
+          <span class="mono" id="queryPreview">URL will appear here</span>
+        </div>
+      </div>
+      <div class="courses-grid" id="filterGrid"></div>
+      <div class="empty-state hidden" id="filterEmpty">
+        <div class="empty-icon">⊘</div>
+        <p>No results. Try different filters.</p>
+      </div>
+    </section>
+
+    <!-- ── VIEW: Paginate ── -->
+    <section class="view hidden" id="view-paginate">
+      <div class="query-panel">
+        <div class="panel-head">
+          <span class="mono panel-route">GET /courses?page=&amp;limit=</span>
+          <button class="btn btn-primary btn-sm" onclick="runPaginate()">Fetch Page</button>
+        </div>
+        <div class="filter-grid" style="grid-template-columns:1fr 1fr 1fr;">
+          <div class="form-group">
+            <label class="form-label">Page</label>
+            <input class="form-input mono" id="p-page" type="number" min="1" value="1"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Limit (1–100)</label>
+            <input class="form-input mono" id="p-limit" type="number" min="1" max="100" value="10"/>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Total Found</label>
+            <div class="form-input mono" id="p-total" style="background:var(--surface-2);cursor:default;">—</div>
+          </div>
+        </div>
+      </div>
+      <div class="courses-grid" id="paginateGrid"></div>
+      <div class="empty-state hidden" id="paginateEmpty">
+        <div class="empty-icon">⊘</div>
+        <p>No courses on this page.</p>
+      </div>
+    </section>
+
+  </div><!-- /main -->
+
+  <!-- ── Modal: Create / Edit ── -->
+  <div class="modal-overlay hidden" id="modalOverlay" onclick="handleOverlayClick(event)">
+    <div class="modal" role="dialog" aria-modal="true">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="modalTitle">New Course</div>
+          <div class="modal-sub" id="modalSub">POST /create_course</div>
+        </div>
+        <button class="close-btn" onclick="closeModal()" aria-label="Close">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-row">
+          <div class="form-group span-2">
+            <label class="form-label">Title <span class="req">*</span></label>
+            <input class="form-input" id="m-title" placeholder="e.g. Python For Beginners" />
+            <span class="err-msg" id="e-title"></span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Instructor <span class="req">*</span></label>
+            <input class="form-input" id="m-instructor" placeholder="e.g. Jane Doe" />
+            <span class="err-msg" id="e-instructor"></span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Category <span class="req">*</span></label>
+            <input class="form-input" id="m-category" placeholder="e.g. programming" />
+            <span class="err-msg" id="e-category"></span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Price ₹ <span class="req">*</span> <span class="hint">(0–10000)</span></label>
+            <input class="form-input mono" id="m-price" type="number" min="0" max="10000" placeholder="499" />
+            <span class="err-msg" id="e-price"></span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Duration (hrs) <span class="req">*</span></label>
+            <input class="form-input mono" id="m-duration" type="number" min="1" max="1000" placeholder="20" />
+            <span class="err-msg" id="e-duration"></span>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Discount % <span class="req">*</span></label>
+            <input class="form-input mono" id="m-discount" type="number" min="0" max="100" step="0.01" placeholder="0" />
+            <span class="err-msg" id="e-discount"></span>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Published</label>
+            <div class="toggle-row">
+              <span class="toggle-text" id="toggleText">Yes — Published</span>
+              <label class="toggle">
+                <input type="checkbox" id="m-published" checked onchange="updateToggle()">
+                <span class="toggle-track"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+          <button class="btn btn-primary" id="submitBtn" onclick="submitCourse()">Create Course</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Toast ── -->
+  <div id="toastStack" class="toast-stack"></div>
+
+  <!-- ── Course Detail Drawer ── -->
+  <div class="drawer-overlay hidden" id="drawerOverlay" onclick="closeDrawer()">
+    <div class="drawer" id="drawer" onclick="event.stopPropagation()">
+      <button class="close-btn drawer-close" onclick="closeDrawer()">✕</button>
+      <div id="drawerContent"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
