@@ -6,11 +6,6 @@ from typing import Optional
 route = APIRouter()
 app = FastAPI()
 
-
-@route.get("/")
-def msg():
-    return {"message":"welcome to my api"}
-
 @route.get("/courses")
 def get_courses():
     data=read_data()
