@@ -4,8 +4,6 @@ from utils import read_data,write_data
 from typing import Optional
 
 route = APIRouter()
-app = FastAPI()
-
 @route.get("/courses")
 def get_courses():
     data=read_data()
