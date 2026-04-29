@@ -16,10 +16,6 @@ def write_data(data):
     with open ("courses.json","w") as fs:
         json.dump(data,fs)
 
-@app.get("/")
-def msg():
-    return {"message":"welcome to my api"}
-
 @app.get("/courses")
 def get_courses():
     data=read_data()
